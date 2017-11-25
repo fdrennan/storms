@@ -1,0 +1,130 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+runtime: shiny
+---
+
+Clone working directory with command ```git clone https://github.com/fdrennan/storms.git```
+
+```{r, warning = FALSE, message = FALSE}
+rm(list = ls())
+
+library(tidyverse)
+library(lubridate)
+library(ggmap)
+library(ggthemes)
+library(shiny)
+library(plotly)
+```
+
+```{r, warning = FALSE, message = FALSE}
+storms <- 
+  storms %>% 
+  # Joining separate date columns
+  unite(
+    # Columns to combine
+    year, month, day, hour, 
+    # New Column Name
+    col = "date", 
+    # How columns should be separated
+    sep = "-"
+  ) %>% 
+  mutate(
+    # Using function from lubridate
+    date = ymd_h(date)
+  )
+
+cuba <-
+  geocode("cuba") %>%
+  as.numeric
+
+cuba_map <-
+  get_googlemap(center=cuba, scale=2, zoom=3) %>%
+  ggmap(., extent="normal")
+
+
+```
+
+
+# Date change is interactive
+```{r, warning = FALSE, message = FALSE}
+
+shinyApp(
+  
+  ui = fluidPage(
+    dateRangeInput("date", "Date", start = "1970-01-01"),
+    plotlyOutput("hurricainePlot")
+  ),
+  
+  server = function(input, output) {
+    output$hurricainePlot <- renderPlotly({
+      storm_filter <- 
+        storms %>% 
+        arrange(name, date) %>% 
+        filter(
+          date > min(input$date),
+          date < max(input$date)
+        )
+
+    plot_output <- 
+    cuba_map + 
+      geom_path(
+        data = storm_filter,
+        aes(x = long, y = lat, colour = name)
+      ) +
+      theme(legend.position='none')
+    
+    ggplotly(plot_output, height = 1000) 
+
+    })
+  },
+  
+  
+  options = list(height = 1000)
+)
+
+```
+
+
+```{r, warning = FALSE, message = FALSE}
+storm_filter <- 
+  storms %>% 
+  arrange(name, date)
+
+cuba_map + 
+  geom_density2d(
+    data = storm_filter,
+    aes(x = long, y = lat)
+  ) 
+```
+
+
+```{r, warning = FALSE, message = FALSE}
+storms %>% 
+  ggplot() +
+  aes(x = wind, y = pressure) +
+  geom_density_2d()
+```
+
+
+```{r, warning = FALSE, message = FALSE}
+category <- 
+storms %>% 
+  mutate(
+    year = year(date)
+  ) %>% 
+  group_by(year, category) %>% 
+  count() 
+
+
+ggplot(
+  data = category,
+  aes(x = year, y = n, colour = category)
+) +
+  theme_solarized(light = TRUE) +
+  stat_smooth(se = FALSE) 
+```
+
+
