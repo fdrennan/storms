@@ -47,14 +47,12 @@ cuba_map <-
 
 ```
 
-
-# Date change is interactive
 ```{r, warning = FALSE, message = FALSE}
 
 shinyApp(
   
   ui = fluidPage(
-    dateRangeInput("date", "Date", start = "1970-01-01"),
+    dateRangeInput("date", "Date", start = "2014-01-01"),
     plotlyOutput("hurricainePlot")
   ),
   
@@ -125,6 +123,7 @@ ggplot(
 ) +
   theme_solarized(light = TRUE) +
   stat_smooth(se = FALSE) 
+  
 ```
 
 
